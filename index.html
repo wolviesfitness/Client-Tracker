@@ -106,7 +106,7 @@
     <div class="brand">Wolvies Fitness</div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
-    <span id="sync-status" class="sync-status sync-loading">Connecting...</span>
+    <span id="sync-status" class="sync-status sync-loading">⧖ Connecting...</span>
     <span style="font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:1px;">CLIENT TRACKER</span>
   </div>
 </div>
@@ -354,21 +354,21 @@ function setSyncStatus(state, msg) {
 
 // ── Load all data ────────────────────────────────────────────────
 async function loadAll() {
-  setSyncStatus('loading', 'Syncing...');
+  setSyncStatus('loading', '⧖ Syncing...');
   try {
     [clients, attendance, payments] = await Promise.all([
       sbGet('wf_clients', 'order=created_at.asc'),
       sbGet('wf_attendance', 'order=date.asc'),
       sbGet('wf_payments', 'order=date.asc')
     ]);
-    setSyncStatus('ok', '&#9679; Live');
+    setSyncStatus('ok', '● Live');
     renderDashboard();
     renderClients();
     populateClientSelects();
     populateMonthFilter();
     updateDbStats();
   } catch(e) {
-    setSyncStatus('err', 'Offline');
+    setSyncStatus('err', '● Offline');
     toast('Could not connect to database — check internet');
     console.error(e);
   }
@@ -482,7 +482,7 @@ async function saveClient() {
   const sessions=parseInt(document.getElementById('c-sessions').value);
   const fee=parseFloat(document.getElementById('c-fee').value);
   if(!name||!sessions||!fee){toast('Fill in all required fields');return;}
-  setSyncStatus('loading','Saving...');
+  setSyncStatus('loading','⧖ Saving...');
   try {
     if(editClientId) {
       await sbUpdate('wf_clients', editClientId, {name,phone,start_date:start,sessions,fee});
@@ -493,12 +493,12 @@ async function saveClient() {
     }
     await loadAll();
     closeModal('modal-client');
-  } catch(e) { setSyncStatus('err','Error'); toast('Save failed: '+e.message); }
+  } catch(e) { setSyncStatus('err','● Error'); toast('Save failed: '+e.message); }
 }
 
 async function deleteClient(id) {
   if(!confirm('Delete this client and all their records?')) return;
-  setSyncStatus('loading','Deleting...');
+  setSyncStatus('loading','⧖ Deleting...');
   try {
     await sbDelete('wf_attendance_by_client', id); // handled by cascade
     await sbDelete('wf_clients', id);
@@ -576,12 +576,12 @@ async function markAttendance() {
   const c=clientById(clientId);
   if(attendance.filter(a=>a.client_id===clientId&&a.date===date).length>0){toast('Already marked for this date');return;}
   if(clientSessions(clientId).length>=c.sessions){toast('Package sessions exhausted');return;}
-  setSyncStatus('loading','Saving...');
+  setSyncStatus('loading','⧖ Saving...');
   try {
     await sbInsert('wf_attendance',{client_id:clientId,date,status});
     toast(`Marked ${status==='late_cancel'?'Late Cancel':status} for ${c.name}`);
     await loadAll(); renderAttendanceLog();
-  } catch(e) { setSyncStatus('err','Error'); toast('Failed: '+e.message); }
+  } catch(e) { setSyncStatus('err','● Error'); toast('Failed: '+e.message); }
 }
 
 async function deleteAttendance(id) {
@@ -621,13 +621,13 @@ async function recordPayment() {
   const reference=document.getElementById('pay-ref').value.trim();
   if(!clientId||!amount||!date){toast('Fill in all required fields');return;}
   const c=clientById(clientId);
-  setSyncStatus('loading','Saving...');
+  setSyncStatus('loading','⧖ Saving...');
   try {
     await sbInsert('wf_payments',{client_id:clientId,amount,date,mode,reference});
     document.getElementById('pay-amount').value=''; document.getElementById('pay-ref').value='';
     toast(`Payment of ${fmtMoney(amount)} recorded for ${c.name}`);
     await loadAll(); renderPaymentLog();
-  } catch(e) { setSyncStatus('err','Error'); toast('Failed: '+e.message); }
+  } catch(e) { setSyncStatus('err','● Error'); toast('Failed: '+e.message); }
 }
 
 async function deletePayment(id) {
