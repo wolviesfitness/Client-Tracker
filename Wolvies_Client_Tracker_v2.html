@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wolvies Fitness — Client Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red:#CC1111;--red-dark:#8B0000;--red-glow:rgba(204,17,17,0.15);
+    --black:#0A0A0A;--dark:#111111;--card:#161616;--card2:#1C1C1C;
+    --border:#2A2A2A;--border2:#333333;--white:#FFFFFF;
+    --grey:#888888;--grey-light:#AAAAAA;
+    --green:#22C55E;--amber:#F59E0B;--gold:#C8A96E;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--black);color:var(--white);font-family:'Barlow',sans-serif;min-height:100vh;overflow-x:hidden;}
+  .header{background:var(--red);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(204,17,17,0.4);}
+  .brand{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;color:#fff;}
+  .sync-status{font-size:11px;letter-spacing:1px;padding:4px 12px;border-radius:20px;font-weight:600;}
+  .sync-ok{background:rgba(34,197,94,0.2);color:var(--green);border:1px solid rgba(34,197,94,0.4);}
+  .sync-err{background:rgba(204,17,17,0.2);color:#FF5555;border:1px solid rgba(204,17,17,0.4);}
+  .sync-loading{background:rgba(245,158,11,0.2);color:var(--amber);border:1px solid rgba(245,158,11,0.4);}
+  .container{max-width:1200px;margin:0 auto;padding:32px 24px;}
+  .tabs{display:flex;gap:4px;margin-bottom:32px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .tab{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:12px 20px;cursor:pointer;color:var(--grey);border-bottom:3px solid transparent;margin-bottom:-1px;transition:all 0.2s;}
+  .tab:hover{color:var(--white);}
+  .tab.active{color:var(--red);border-bottom-color:var(--red);}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:20px;}
+  .card-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--red);margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+  .card-title::before{content:'';display:block;width:4px;height:20px;background:var(--red);border-radius:2px;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
+  .form-group{display:flex;flex-direction:column;gap:6px;}
+  label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);}
+  input,select{background:var(--dark);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:10px 14px;font-family:'Barlow',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;width:100%;}
+  input:focus,select:focus{border-color:var(--red);}
+  select option{background:var(--dark);}
+  .btn{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:11px 24px;border-radius:6px;cursor:pointer;border:none;transition:all 0.2s;}
+  .btn-red{background:var(--red);color:#fff;}
+  .btn-red:hover{background:#E52222;box-shadow:0 4px 16px rgba(204,17,17,0.4);transform:translateY(-1px);}
+  .btn-outline{background:transparent;color:var(--red);border:1px solid var(--red);}
+  .btn-outline:hover{background:var(--red-glow);}
+  .btn-ghost{background:var(--card2);color:var(--grey-light);border:1px solid var(--border2);}
+  .btn-ghost:hover{border-color:var(--grey);color:var(--white);}
+  .btn-gold{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+  .btn-gold:hover{background:rgba(200,169,110,0.12);}
+  .btn-sm{padding:6px 14px;font-size:11px;}
+  .btn-danger{background:transparent;color:#FF4444;border:1px solid #FF4444;}
+  .btn-danger:hover{background:rgba(255,68,68,0.1);}
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
+  .stat-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px 20px;position:relative;overflow:hidden;}
+  .stat-box::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--red);}
+  .stat-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);margin-bottom:6px;}
+  .stat-value{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--white);line-height:1;}
+  .stat-value.red{color:var(--red);} .stat-value.green{color:var(--green);} .stat-value.gold{color:var(--gold);}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border2);background:var(--dark);}
+  tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s;}
+  tbody tr:hover{background:var(--card2);}
+  tbody td{padding:12px 14px;color:var(--grey-light);vertical-align:middle;}
+  tbody td:first-child{color:var(--white);font-weight:500;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge-present{background:rgba(34,197,94,0.15);color:var(--green);}
+  .badge-absent{background:rgba(204,17,17,0.15);color:#FF5555;}
+  .badge-late{background:rgba(245,158,11,0.15);color:var(--amber);}
+  .client-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+  .client-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+  .client-card:hover{border-color:var(--red);transform:translateY(-2px);box-shadow:0 8px 24px rgba(204,17,17,0.15);}
+  .client-card::after{content:'';position:absolute;top:0;right:0;width:60px;height:60px;background:radial-gradient(circle at top right,rgba(204,17,17,0.1),transparent 70%);}
+  .client-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:4px;}
+  .client-meta{font-size:12px;color:var(--grey);margin-bottom:12px;}
+  .client-progress{height:4px;background:var(--border2);border-radius:2px;overflow:hidden;margin-bottom:8px;}
+  .client-progress-bar{height:100%;background:var(--red);border-radius:2px;}
+  .client-progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--grey);}
+  .section-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--white);margin-bottom:20px;}
+  .section-title span{color:var(--red);}
+  .divider{height:1px;background:var(--border);margin:24px 0;}
+  .empty{text-align:center;padding:60px 20px;color:var(--grey);}
+  .empty-icon{font-size:48px;margin-bottom:12px;opacity:0.3;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(4px);}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:32px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;position:relative;}
+  .modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--red);margin-bottom:24px;}
+  .modal-close{position:absolute;top:16px;right:16px;background:var(--border2);border:none;color:var(--grey);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+  .modal-close:hover{background:var(--red);color:white;}
+  .payment-pill{display:inline-flex;align-items:center;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--green);}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--red);border-radius:8px;padding:14px 20px;font-size:13px;color:var(--white);transform:translateY(80px);opacity:0;transition:all 0.3s;z-index:9999;display:flex;align-items:center;gap:10px;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .flex{display:flex;} .flex-between{display:flex;justify-content:space-between;align-items:center;}
+  .gap-8{gap:8px;} .gap-12{gap:12px;} .mb-16{margin-bottom:16px;}
+  .text-red{color:var(--red);} .text-green{color:var(--green);} .text-grey{color:var(--grey);} .text-gold{color:var(--gold);}
+  .text-sm{font-size:12px;} .font-bold{font-weight:700;} .hidden{display:none;}
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-track{background:var(--dark);}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--red);}
+  @media(max-width:600px){.header{padding:0 16px;}.container{padding:20px 14px;}.form-grid{grid-template-columns:1fr;}.stats-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAT10lEQVR42u2debBcZZnGn7fvzcYiGHZCWEQCDAmFEIpFMggCYYmMMzACQgYckVEkpU4BA0KmBIVBR6Zk32SZDCQEEAibsiiasEkkLEYSEoiyKTskEEJyu88zf/T7mTdfTvddcm+HmOdX1dWnz97d33Pe5dsAIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQjSEZIVkm+5LiOULocUC+XESh/4dsbILYZu/n0ryDF9uj6JZSffV7u/bkLya5IBczEK0xHKQHExyPuv8VxLOyiqMQRzDSb7o93VM3CZEKwvisV4IPyK5kOT5K8uShHvak+TbJDtIVklOk9slVpZ7NYlk4SK5jORDJK9rtSUJ4tjLxfpTku/6vS0iublEIlrtXvUnOc/FUfOn9i4kXwsiqfR1oSTZz99H+b2cTnKCLy/296PkZolWCaTi73/nwqC7MyQ5meQmvjwpWZG+EkkQx9/7NS8ieYAvV8N9XSCBiFa7V18MBZEkl/j7fiRH+vJtJPv3hXsTxHGYX+tukgNIvuyuVS3c271ysUSrg+GTM+uRxPKSbz8hFU6Sa0dxraiLV5IkeMI/35SJNlm4WUrzilYL5JJQGBeSnB2EcpPvc6l/fpjkRtmT3/zV5q/2zrJf0V3zWIMeB61BchyX5cOQQHiD5LoxhhKir12sm4NrtZjkv5Hc3UUxm+Q/+35TfL9nSI5Y0eSAL//Ez/mmVwhu71mrqSS/R3IMyVeCQBaR3ExulmilQG7PYo8PSO6SrAzJoZ7FWpPko77POySP8QzY2h7Q7+HxzDdJfofkNnlBDpmzNUn+zM/1Hsldff0QkpuG/e/MXK1q2XmF6Mss1oOh8BXBtTmmZN+NSD4X9pnnT/gPuDz/krlyyRVbyy1EqpjcN89MuVBmZuJI7CKBiFYIJD3NH86C9AdJ3u/1IKd5XFAJFmcbkq9mYqJ/rnqh7yB5RCaQ9D4+HHN4sFTm19nVxfECycfCudP1duutRMHqhPLiPSc9iemv9QDsC2AhgJ0A9DezD71Q9jezuST3ATAdwBp+vPkrFdq2kv+k5qK8AsCbABaY2S0k282sStLMrHDLcCSAOQDu8HsqsvsUouUWpBrSqU+SHNgg67UWySs9ZqmVuFbJEh2fu06N3LwGAfwtmYuVLMhIuVg9fwqK7lNkv2PVLcdkD8Lbw1N+JwBTAXzNLUSlJ8L0c7aZWVH2P5I8B8Bhfi/JKlnJ/QrR50H6AyVP6kW+fHbY/19DMN7BxnTZgjTIqu0RKgdz60GSO8iCyIK0gvREXhB8+/R0HgjgQQATkksF4GoAawKo9VHMl+KPmQDGAVji1qMa9unw2EhIIK0zJv5e9d+xADDezPYFsBaA37pLVfN9+yR7ZGY0s8LM3jeziwGMcrG0h2sXvixEn7tYyaX5WXBl5pDc3dd/K7hLzVyqXnGxmiQELgvnfofkhnlAL0RfCCQVwv8NTdwHkBwYMkhskKnqU4FEAfvy0V6/8g7JNSUQuVitdK3mAzjfzI4AMALA0yGDxJX125pZLWW8zOwGAIcAeCHFJGam+hDR51akQvKTvnxi6LnXwZ7TKxakgTs4OK+fEbIgfeZieT3E+ySvAXAJgP4eCLd/TO4xuVGfJvltAPPN7KOVOeKKBLL6iKNKclsA0wB8ZWW7VA3cLHrq9wUA7wL4NclDzazm29QeS/S6S5UqCI/wvhfNXKpqq4P0MssQmsXs7n1Ubgy9G9tlTWRBekMcqWkHSZ4H4EYA66J5xV9b+G0LtzJFX4q3LPhO68zsMTPbDsBbAB4leaCZVWVNOketebvmUm0F4Keot9YtsGwL3GUOQb3W+hbU22UNAbBO9iCqYWlL3p4KNrXwrZhZzddvCeDl9DkE6WMBbApgC4+VdgDwc5IXAjjTzN5P31P/uOhJgRzt/ThSR6VmrlPNX1NI7kDyQu8CeyHJuVnbqKK7LlZw82InqRE+xNCYzBVMQw5dXOL+pazbTJKj9C+LbvnyXtDWJXl+D9K1SUD3kDzJh+H5Acn1SB7oY1e9USKSpgIJKdvjSH7G7+9aP+Y/ooDi9/Dle7OB5HLO9tr3iuISuVhdyQIVJNcH8CqAUwCsDeBTqDc63AzAru5OWYO4rgPAQQDuAzAJwBkAhvv69VDv2DQZwOB0yS66VYcCuBbAjwGMBPA5ALeY2Q9zN8njC/MCfyyAJwFsCOAh1Ntq1QD8BcBHHpu0+/eWQMQKWZgfNujz3agb7d6hC2ziEpLfyM6TLMjYaEHSU53k+j68UORlt0wNhzgNlucQP+ZR/Yuit1ytNFbVAPfp9wqjFnbV1ZpJ8mAfteS7PmfHRyQP8vF8o6BI8uhMIKmAX07yTyT/28V1Esmdc9eqUbLB33/k17jWPw9MnbBkOcSKCKXNewnO7GZDxDgu1f3e5fYEH5L0HJJ3BCuSBPLlVKhDPcZQH7H9E2X3143v0E7yt36dz0UBCtFTgaSn71k9bG9VJqZF3qf98hKBHFkikE1IruPL/YJlq3Tje6SAfVu3YLPcMiowFz0WR3JvhnsGqFqSnu2qJallI64XJJ8tcbGOLMtiddValFiM+EoDaZ/m1zpTVkSsqGtlJB/pQmC+oqRzH5ELJGSjuizqZts99pjllmxIX07RsKqjNG9j2rwW/UQAe6DeXCT9XmksLGDFmuuUpYprYRuArvfhyGrZ9wGwG+pp5Q8APA9gBoDZ3rL3OACPATjLzI6XQER3rEdKrW7uY+Au8VdHD12s7liQf+qu25NVCo4mOb1Jg8jpJM8luaMnCwqv9Te5WqK7scfdDQrah9785MkwpE/Rw662uUAO6Y5AMnGckZ1vCcnfuzu1oOSar/p+98RAXoiuiOPk0P5qhjcROc5nkR3qTTO2dgtTZJal1sNAviC5V1cFEmMTkldk4kiCu973G+L3/jVPGc/Krn+AAnbRpQLntdYTfc6PbZrsf1M2BcKrJB/PMlfdSQcv8oI+uLPAPEsiTPJzvEjyN0Fs6fr7N3Ajh5Ec63OdXNWKSUfF34ZQylKsKVXazwvlsBCTpMLY4ZZmfInr1MxyLAmu27k+IU7D+onMrZoULMVon1oh3VO6v7t831SH0lZyzgGqDxHdDdTbSwaKThWHp5dUHKYn9kk+kecLnYgkumVvkbyA5NdJfpXkpo1EEtzAi7191rEkB/ksVvE+0vkXhCngLIqskWCE6LFw/P3nJQKJFX5f9EI7pYFIijAz1YkkBzSyFg2uvxfJ/yG5iX+e2qCmP113TLMYQ9ZD9LZQZjV4WhehT3qaIu2SkoGuaz6g254+t/lEP+dckr8keUroP15mRdYKy9c3aQaT1n27kfsoRK8F8f4+yAPiJJCiQfurV9Lcgdm8gbUw++3EJvHJ0yQ3LgvYgyU5tYElq2XrT5FARKsEsqb3xchdp7LlhzzbtIW7U2WCqgbhpGA/9f7bLgoii4MODCIoGsQ4SSCnSiDdRym9bhCafCxCvSdeYiGAMQBeSmUYS6cg+CyAq83sRQAX+2+empMsAfCi72u+reLH9wdwrpnNjpPm+HKV5HDUR1gpwvHpvD9BfRq2uG6x/kHRSisyLTypx/m6skaN+RP89dCytyD5RIhnoms0wxsVVsI1k1u1sY8o38hq7U9yA08bp3WHNgvShegtgST35kov0M94/UIlBOMdDQLlQz37lCoXk1s0zedSTy7Wc+6SxfqO1D5sYOj0VC3Jii3xkR9B8ryw34jcVROiLwXydS98J4ZtX2qS0k19QUaENlOLQ8F+JgT+Y0uuW/HXHQ1EWAvnSdNDb+xNZV7X9Ac9QwFbDzTi77/zOOTusG0q6k3L18KyTdnjdM+/BrA9gM0BnOCxwR9RH0d3oMceO3v32ptRH1u33cwWkbwRwBewbNP7RJry+V6PUfqb2WskHwcwwMwW+giMmsxTtCQGWYfkDeFzqt2+LaswLKu0m+Ptva4Mma6HfLysJT6O7oMem9zk570oa/fVqGtvmulqgFuR00meqwyWWBli2ToIJLleYxrEB7Vs/WwPpL8cBsPOeYDkRiTPzNyqvCFkCvhnhFgl3denSA6TeyU+FtbFRz+Z3aA1b5GJ5BWSI/3YA7yh4kSS3/GC3ebtszpr9Fjt7cl3hOgNQTRqyHh09sR/g+QvMlcoimciyVEk1/DjN/D51eeWNFEpfHysaVkl4fMk18hr3bvTn12IlojGs0hPBQFM9UK/MKtJr5UMB/RmA+sQBXekv9IxJHmsrIdYFQSSgvV9wlP/Zl93cpMWt7VO1iWhPO7nOjhsmxHqYmQtxCojkmu8AF8agua7m7S8LUq678ZpFd4NbbP2D+s/G68rxKrgZlV8YOn3SF6XCrCnd1/oQuBd1uBwTLjGKF93vsQhVmUrchjJKb6cRjYcHlK7nfVbz9tyDQyJgNlhYG25VmLVzHKR/DzJflmma18v/LUmY20lcVyYjg3C+wLJHeJ1hFgVRVLWGzCJ5Kgm/TmS+3V7cM+sK+cXYpW0JNm6ZFFObjL4wzM+/lZZj0KNpyv+5oWTRHJV1mSk6r0Pt1cALlZr98tdp0EecMfGiN+M7pgQq6tIUtA9KlQOPixxCLF80H6DW4/Py7USIlgRd7f2IDkjuV/6ZYTILAnJbdQCVwghRI+siOo2PkbIjC9fOA1Akc8L6NtYsj4F0swHRPBjUoEvyo7v7LrZNYpG8xWGc9DMCnfRKvG+wj7NKLo6J6IQnQnKmgXdjbbpl5MFWRULexuAnVEfTmeOmb2dFfLNAMwH8D6wdBhSkrsBWN+PmUuy3cyqvm1HANv6k/x5M3siPcnTU97M6AO9DQbwopn9OV3Xt60NYISfYzaAt7Prp3Ns5fcIM5tGcgsAmwJ4y8zm+r7DUJ/1ttnQP38wsw/SeVUyROy/kaZPu9zXx9azj5A825dTE5H1wuSYXw2dovbNhiZNTCf5j8HKpNa+aW6P8eG66VwbholCL41WKEwZ1z/UxF/v2873z3eG7zmlC/1P9palW4oCQv8d3E+/wT8f7CMR1nze8V1Qnyt9LMlBWDog9H4A1gawAMD9/iQfB+ABAHuhPrDcUwCeBvAhgJEAbiX5fTOrZRa8ANDxV9NeP1ebmb0B4DrUB6I7nORgACnGaPOn/D+4pVoM4Ed+ig4/55JwjY983XtujZ4L77NQn0t9oYqDKM0ckfx0GATh4LD9/0Jz9C+F9ZN9fWoaclB4Ek/286WpzrYKNeV/nQ/dj0vW5vRkQbL72i5MhzAuWJm0/Vd+H3eHc6ZxeW8L69JcJJPc6gzy9/7e8aqf6l9EZyJJhe1q/7ylj0aS+mz8ytdv4PMKxoL9tO9zX5Pr3On7TC9xsf4zCiRzp271fZ71wpyO3SU0lT+kE4FM8HXX6B+Xi9XT3+Iud31G++cjAKzhwbsB2JvkEA/oU8A7meTmAIb7PmfFWCUt+9P5++4u7QRgu+wemjVO/LG7dtsDOAhLxwj+hh/3BwD3BXExe4/LI0ge73HTV8LrE82yc6sjai26bAwAAPcAOA/AEJKfA3C4F6zfAdgYwFAAx6E+0DQBPGVm80ju5yL7AMAfvZBVw/mrHlfM82zYJ10gz2LpZDzLPbA8BqqY2SMkH0V9Qp5xZna7C/Uw3/VyM+vwPuvVBpmqdP6R/sqZ5vGUZcKSQFZ3PO1a8RmdpntQfoEHv+ZP6tEAzgEwzgNiAzAle+L2AzAgBODM3TjUR3lHyZPdmli3AsBFHvzvQ3JLtyTrAvgzgAl+H7VM8JG07U8AfhmubR7Mv1lidSQQsVxBnAhgTwA7+vpZZvYEyXcBjAewUShwU9wyzMbSqQ/2NrPrPFaoeoHrZ2aLSY7yzFcBYG5WICsec7SRzGvsDcBtnm3azsW7pW++wswWuHvFJgJJFu1pMzu+JD4y1X8oBumKm3Ur6mnZVKCu8oIzD8AvvBASwO8BPOPp2FcA3O/7f4/kMDNbbGY1MytcHENRT8Oau2zPZtft8P3TcelVrRs56wBwqR9/qAt4PoArXEBFiVVq9j1zK0qJQxakK27WX0hOdZdqPoDJoeBchnq9AwDcl+orSBYAvuvHbAHgNyQvQn3CnCqAzwA4zZ/6iwF8y+tCUmEuAGztcU+bW6fk/hQApqM+eegEv876/v9NMLPXXaS14MYV/ooFfrGvW88rBNuCWNK1ZprZW7IkopRQBzHWU6LXpvWhxv0J37aHb4u14vuRfK1JTfVrJEfHLFdI8zZjaLjH8WGQh2HZXIbp/s/xfe4Kx13Shesclb6TSoMsCJoEsvd68Ht5cF8qPr3ZZQDOAPB4elqHmu8HSO4K4N9Rr2nfzPd5CcB9AC40s5e9AKZrPQtgAw+UB2VuUgqgO0IschmAYwE8ZmZzsqnV0lP/NQDzUJ/aLfEygDluiVLL3v7BSlUAvK4iILpqTQY3WG9NtrXFZZ8haqNszo62snOGY8pe+bhY7c1Gcw8jpuTH5XOaVOJ19K+LVgirUjYiSWwesoLnV0Veq+JS/QTNC2KTDkqdBrF5QW62f2i2bo0yTD25fmfHdecehRBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEIIIYQQQgghhBBCCCGEEEII0Wv8PxoXtuRKNZYzAAAAAElFTkSuQmCC" style="height:52px;width:52px;object-fit:contain;" alt="Wolvies Logo">
+    <div class="brand">Wolvies Fitness</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="sync-status" class="sync-status sync-loading">Connecting...</span>
+    <span style="font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:1px;">CLIENT TRACKER</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('dashboard')">Dashboard</div>
+    <div class="tab" onclick="showTab('clients')">Clients</div>
+    <div class="tab" onclick="showTab('attendance')">Mark Attendance</div>
+    <div class="tab" onclick="showTab('payments')">Payments</div>
+    <div class="tab" onclick="showTab('report')">Monthly Report</div>
+    <div class="tab" onclick="showTab('settings')">&#9881; Settings</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard">
+    <div class="section-title">OVERVIEW <span>TODAY</span></div>
+    <div class="stats-grid" id="dash-stats"></div>
+    <div class="card"><div class="card-title">Today's Sessions</div><div id="today-sessions"></div></div>
+    <div class="card"><div class="card-title">Outstanding Balances</div><div id="balances-list"></div></div>
+  </div>
+
+  <!-- CLIENTS -->
+  <div id="tab-clients" class="hidden">
+    <div class="flex-between mb-16">
+      <div class="section-title">CLIENTS</div>
+      <button class="btn btn-red" onclick="openAddClient()">+ Add Client</button>
+    </div>
+    <div class="client-list" id="client-list"></div>
+  </div>
+
+  <!-- ATTENDANCE -->
+  <div id="tab-attendance" class="hidden">
+    <div class="section-title">MARK <span>ATTENDANCE</span></div>
+    <div class="card mb-16">
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+        <div class="form-group"><label>Date</label><input type="date" id="att-date"></div>
+        <div class="form-group"><label>Client</label><select id="att-client"><option value="">Select client</option></select></div>
+        <div class="form-group"><label>Status</label><select id="att-status"><option value="present">Present</option><option value="absent">Absent</option><option value="late_cancel">Late Cancel</option></select></div>
+        <div class="form-group" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn btn-red" onclick="markAttendance()">Mark Session</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Attendance Log</div>
+      <div class="flex-between mb-16" style="gap:12px;flex-wrap:wrap">
+        <select id="filter-client" style="width:200px" onchange="renderAttendanceLog()"><option value="">All Clients</option></select>
+        <select id="filter-month" style="width:160px" onchange="renderAttendanceLog()"></select>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>#</th><th>Date</th><th>Client</th><th>Session No.</th><th>Status</th><th>Fee</th><th></th></tr></thead>
+        <tbody id="att-log-body"></tbody></table>
+      </div>
+      <div id="att-empty" class="empty hidden"><div class="empty-icon">&#128197;</div><div class="empty-text">No attendance records yet</div></div>
+    </div>
+  </div>
+
+  <!-- PAYMENTS -->
+  <div id="tab-payments" class="hidden">
+    <div class="section-title">PAYMENTS</div>
+    <div class="card mb-16">
+      <div class="card-title">Record Payment</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Client</label><select id="pay-client"><option value="">Select client</option></select></div>
+        <div class="form-group"><label>Amount (&#8377;)</label><input type="number" id="pay-amount" placeholder="0"></div>
+        <div class="form-group"><label>Date</label><input type="date" id="pay-date"></div>
+        <div class="form-group"><label>Mode</label><select id="pay-mode"><option value="UPI">UPI</option><option value="Cash">Cash</option><option value="Bank Transfer">Bank Transfer</option></select></div>
+        <div class="form-group"><label>Reference / Note</label><input type="text" id="pay-ref" placeholder="UPI txn ID or note"></div>
+        <div class="form-group" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn btn-red" onclick="recordPayment()">Record Payment</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Payment History</div>
+      <div class="table-wrap"><table><thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Mode</th><th>Reference</th><th></th></tr></thead><tbody id="pay-log-body"></tbody></table></div>
+      <div id="pay-empty" class="empty hidden"><div class="empty-icon">&#128179;</div><div class="empty-text">No payments recorded yet</div></div>
+    </div>
+  </div>
+
+  <!-- MONTHLY REPORT -->
+  <div id="tab-report" class="hidden">
+    <div class="section-title">MONTHLY <span>REPORT</span></div>
+    <div class="card mb-16">
+      <div class="flex gap-12" style="align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group"><label>Month</label><select id="report-month" style="width:200px"></select></div>
+        <button class="btn btn-red" onclick="generateReport()">Generate Report</button>
+      </div>
+    </div>
+    <div id="report-output"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="tab-settings" class="hidden">
+    <div class="section-title">BUSINESS <span>SETTINGS</span></div>
+    <div class="card">
+      <div class="card-title">Your Details — Shown on Every Invoice</div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="form-group"><label>Coach / Business Name</label><input type="text" id="s-name" placeholder="Your Name"></div>
+        <div class="form-group"><label>Phone</label><input type="text" id="s-phone" placeholder="+91 XXXXX XXXXX"></div>
+        <div class="form-group"><label>Email</label><input type="text" id="s-email" placeholder="your@email.com"></div>
+        <div class="form-group"><label>Location</label><input type="text" id="s-location" placeholder="Kolenchery, Kerala"></div>
+        <div class="form-group"><label>UPI ID</label><input type="text" id="s-upi" placeholder="yourname@upi"></div>
+        <div class="form-group"><label>Instagram / Website</label><input type="text" id="s-social" placeholder="@wolviesfitness"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="flex gap-8" style="justify-content:flex-end">
+        <button class="btn btn-red" onclick="saveSettings()">Save Settings</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Database Status</div>
+      <div style="font-size:13px;color:var(--grey-light);line-height:1.8;">
+        All your data is stored securely on <strong style="color:var(--white)">Supabase cloud database</strong>.<br>
+        Works from any device, any browser. No local storage needed.<br><br>
+        <span id="db-stats" style="color:var(--grey)">Loading stats...</span>
+      </div>
+      <div class="divider"></div>
+      <div class="flex gap-8">
+        <button class="btn btn-outline" onclick="loadAll()">&#8635; Refresh Data</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CLIENT MODAL -->
+<div class="modal-overlay" id="modal-client">
+  <div class="modal">
+    <div class="modal-title" id="modal-client-title">Add New Client</div>
+    <button class="modal-close" onclick="closeModal('modal-client')">&#10005;</button>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="form-group" style="grid-column:1/-1"><label>Client Name</label><input type="text" id="c-name" placeholder="Full name"></div>
+      <div class="form-group"><label>Phone</label><input type="text" id="c-phone" placeholder="Mobile number"></div>
+      <div class="form-group"><label>Start Date</label><input type="date" id="c-start"></div>
+      <div class="form-group"><label>Total Sessions in Package</label><input type="number" id="c-sessions" placeholder="e.g. 24"></div>
+      <div class="form-group"><label>Fee per Session (&#8377;)</label><input type="number" id="c-fee" placeholder="e.g. 500"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="flex gap-8" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('modal-client')">Cancel</button>
+      <button class="btn btn-red" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW CLIENT MODAL -->
+<div class="modal-overlay" id="modal-view">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-title" id="view-name">Client Detail</div>
+    <button class="modal-close" onclick="closeModal('modal-view')">&#10005;</button>
+    <div id="view-content"></div>
+  </div>
+</div>
+
+<!-- INVOICE PICKER MODAL -->
+<div class="modal-overlay" id="modal-invoice">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title">&#129534; Generate Invoice</div>
+    <button class="modal-close" onclick="closeModal('modal-invoice')">&#10005;</button>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>Client</label>
+      <select id="inv-client"><option value="">Select client</option></select>
+    </div>
+    <div class="form-group" style="margin-bottom:24px">
+      <label>Billing Period (Month)</label>
+      <select id="inv-month"></select>
+    </div>
+    <div class="divider"></div>
+    <div class="flex gap-8" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('modal-invoice')">Cancel</button>
+      <button class="btn btn-gold" onclick="generateInvoice()">Generate &amp; Open</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">&#10003; <span id="toast-msg"></span></div>
+
+<!-- INVOICE OVERLAY -->
+<div id="invoice-overlay" style="display:none;position:fixed;inset:0;z-index:2000;flex-direction:column;background:#f3f4f6;">
+  <div style="background:#111;padding:12px 24px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,0.5);">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <img src="data:image/png;base64,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" style="height:36px;width:36px;object-fit:contain;" alt="Wolvies Logo">
+      <span style="font-family:'Bebas Neue',sans-serif;color:#CC1111;font-size:22px;letter-spacing:3px;">WOLVIES FITNESS — INVOICE</span>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="printInvoice()" style="background:#CC1111;color:#fff;border:none;padding:10px 24px;font-family:'Barlow',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:5px;">&#128438;&nbsp; Print / Save PDF</button>
+      <button onclick="closeInvoice()" style="background:#333;color:#aaa;border:none;padding:10px 18px;font-family:'Barlow',sans-serif;font-size:13px;cursor:pointer;border-radius:5px;">&#10005; Close</button>
+    </div>
+  </div>
+  <div id="invoice-frame" style="flex:1;overflow-y:auto;background:#f3f4f6;"></div>
+</div>
+<iframe id="print-iframe" style="display:none;"></iframe>
+
+<script>
+const SUPA_URL = 'https://vgkonehprblcyfwilapf.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZna29uZWhwcmJsY3lmd2lsYXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzOTc4NzEsImV4cCI6MjA5MTk3Mzg3MX0.qgvWihKJ74NvpZkMGs06p8dJ0SjWJYPNqSgWe_MqttM';
+
+// ── in-memory cache ──────────────────────────────────────────────
+let clients    = [];
+let attendance = [];
+let payments   = [];
+let settings   = JSON.parse(localStorage.getItem('wf_settings') || '{}');
+let invCounter = parseInt(localStorage.getItem('wf_inv_counter') || '1');
+let editClientId = null;
+
+// ── Supabase REST helpers ────────────────────────────────────────
+const HEADERS = {
+  'apikey': SUPA_KEY,
+  'Authorization': 'Bearer ' + SUPA_KEY,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation'
+};
+
+async function sbGet(table, params='') {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {headers: HEADERS});
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function sbInsert(table, data) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+    method: 'POST', headers: HEADERS, body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function sbUpdate(table, id, data) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'PATCH', headers: HEADERS, body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function sbDelete(table, id) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'DELETE', headers: HEADERS
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-status sync-' + state;
+  el.textContent = msg;
+}
+
+// ── Load all data ────────────────────────────────────────────────
+async function loadAll() {
+  setSyncStatus('loading', 'Syncing...');
+  try {
+    [clients, attendance, payments] = await Promise.all([
+      sbGet('wf_clients', 'order=created_at.asc'),
+      sbGet('wf_attendance', 'order=date.asc'),
+      sbGet('wf_payments', 'order=date.asc')
+    ]);
+    setSyncStatus('ok', '&#9679; Live');
+    renderDashboard();
+    renderClients();
+    populateClientSelects();
+    populateMonthFilter();
+    updateDbStats();
+  } catch(e) {
+    setSyncStatus('err', 'Offline');
+    toast('Could not connect to database — check internet');
+    console.error(e);
+  }
+}
+
+function updateDbStats() {
+  const el = document.getElementById('db-stats');
+  if (el) el.innerHTML = `&#128101; ${clients.length} clients &nbsp;&#183;&nbsp; &#128197; ${attendance.length} sessions &nbsp;&#183;&nbsp; &#128179; ${payments.length} payments &nbsp;&#183;&nbsp; <span style="color:var(--green)">&#9679; Connected to Supabase</span>`;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800);
+}
+function clientById(id) { return clients.find(c => c.id === id); }
+function clientSessions(cid) { return attendance.filter(a => a.client_id === cid).sort((a,b) => new Date(a.date)-new Date(b.date)); }
+function clientPayments(cid) { return payments.filter(p => p.client_id === cid); }
+function totalPaid(cid) { return clientPayments(cid).reduce((s,p) => s+p.amount, 0); }
+function sessionsAttended(cid) { return clientSessions(cid).filter(a => a.status==='present').length; }
+function amountEarned(cid) { const c=clientById(cid); return c ? sessionsAttended(cid)*c.fee : 0; }
+function balanceDue(cid) { return amountEarned(cid)-totalPaid(cid); }
+function fmtDate(d) { if(!d) return '—'; return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtMoney(n) { return '&#8377;'+Number(n).toLocaleString('en-IN'); }
+function today() { return new Date().toISOString().slice(0,10); }
+function monthLabel(ym) { const[y,m]=ym.split('-'); return new Date(y,m-1).toLocaleDateString('en-IN',{month:'long',year:'numeric'}); }
+function allMonths() {
+  const months = new Set();
+  attendance.forEach(a => months.add(a.date.slice(0,7)));
+  payments.forEach(p => months.add(p.date.slice(0,7)));
+  months.add(today().slice(0,7));
+  return [...months].sort().reverse();
+}
+function populateClientSelects() {
+  ['att-client','pay-client','filter-client','inv-client'].forEach(id => {
+    const el=document.getElementById(id); if(!el) return;
+    const val=el.value; const isFilter=id==='filter-client';
+    el.innerHTML=isFilter?'<option value="">All Clients</option>':'<option value="">Select client</option>';
+    clients.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; el.appendChild(o); });
+    if(val) el.value=val;
+  });
+}
+function populateMonthFilter() {
+  ['filter-month','report-month','inv-month'].forEach(id => {
+    const el=document.getElementById(id); if(!el) return;
+    const val=el.value||today().slice(0,7); el.innerHTML='';
+    allMonths().forEach(ym => { const o=document.createElement('option'); o.value=ym; o.textContent=monthLabel(ym); el.appendChild(o); });
+    el.value=val;
+  });
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  const map={dashboard:0,clients:1,attendance:2,payments:3,report:4,settings:5};
+  document.querySelectorAll('.tab')[map[name]]?.classList.add('active');
+  if(name==='dashboard') renderDashboard();
+  if(name==='clients') renderClients();
+  if(name==='attendance') { populateClientSelects(); renderAttendanceLog(); populateMonthFilter(); }
+  if(name==='payments') { populateClientSelects(); renderPaymentLog(); }
+  if(name==='report') populateMonthFilter();
+  if(name==='settings') { loadSettings(); updateDbStats(); }
+}
+
+// ── Dashboard ────────────────────────────────────────────────────
+function renderDashboard() {
+  const ts=today();
+  const todaySessions=attendance.filter(a=>a.date===ts);
+  const totalEarned=clients.reduce((s,c)=>s+amountEarned(c.id),0);
+  const totalReceived=payments.reduce((s,p)=>s+p.amount,0);
+  const activeClients=clients.filter(c=>clientSessions(c.id).length<c.sessions).length;
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="stat-box"><div class="stat-label">Total Clients</div><div class="stat-value">${clients.length}</div></div>
+    <div class="stat-box"><div class="stat-label">Active Clients</div><div class="stat-value green">${activeClients}</div></div>
+    <div class="stat-box"><div class="stat-label">Total Earned</div><div class="stat-value red">${fmtMoney(totalEarned)}</div></div>
+    <div class="stat-box"><div class="stat-label">Total Received</div><div class="stat-value green">${fmtMoney(totalReceived)}</div></div>
+    <div class="stat-box"><div class="stat-label">Outstanding</div><div class="stat-value gold">${fmtMoney(Math.max(0,totalEarned-totalReceived))}</div></div>
+    <div class="stat-box"><div class="stat-label">Today's Sessions</div><div class="stat-value">${todaySessions.length}</div></div>`;
+  const te=document.getElementById('today-sessions');
+  te.innerHTML=todaySessions.length===0?'<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-text">No sessions marked today</div></div>'
+    :`<div class="table-wrap"><table><thead><tr><th>Client</th><th>Session No.</th><th>Status</th><th>Fee</th></tr></thead><tbody>
+    ${todaySessions.map(a=>{const c=clientById(a.client_id);const sn=clientSessions(a.client_id).findIndex(s=>s.id===a.id)+1;
+    return`<tr><td>${c?c.name:'—'}</td><td>${sn}/${c?c.sessions:'?'}</td>
+    <td><span class="badge badge-${a.status==='present'?'present':a.status==='absent'?'absent':'late'}">${a.status==='late_cancel'?'Late Cancel':a.status.charAt(0).toUpperCase()+a.status.slice(1)}</span></td>
+    <td>${a.status==='present'&&c?fmtMoney(c.fee):'—'}</td></tr>`;}).join('')}</tbody></table></div>`;
+  const wb=clients.filter(c=>balanceDue(c.id)>0);
+  document.getElementById('balances-list').innerHTML=wb.length===0?'<div class="empty"><div class="empty-icon">&#9989;</div><div class="empty-text">All clients paid up</div></div>'
+    :`<div class="table-wrap"><table><thead><tr><th>Client</th><th>Sessions Done</th><th>Earned</th><th>Paid</th><th>Balance Due</th><th></th></tr></thead><tbody>
+    ${wb.map(c=>`<tr><td>${c.name}</td><td>${sessionsAttended(c.id)}</td><td>${fmtMoney(amountEarned(c.id))}</td>
+    <td>${fmtMoney(totalPaid(c.id))}</td><td class="text-red font-bold">${fmtMoney(balanceDue(c.id))}</td>
+    <td><button class="btn btn-gold btn-sm" onclick="openInvoiceFor('${c.id}')">&#129534; Invoice</button></td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+// ── Clients ──────────────────────────────────────────────────────
+function openAddClient() {
+  editClientId=null;
+  document.getElementById('modal-client-title').textContent='Add New Client';
+  ['c-name','c-phone','c-sessions','c-fee'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('c-start').value=today();
+  document.getElementById('modal-client').classList.add('open');
+}
+
+async function saveClient() {
+  const name=document.getElementById('c-name').value.trim();
+  const phone=document.getElementById('c-phone').value.trim();
+  const start=document.getElementById('c-start').value;
+  const sessions=parseInt(document.getElementById('c-sessions').value);
+  const fee=parseFloat(document.getElementById('c-fee').value);
+  if(!name||!sessions||!fee){toast('Fill in all required fields');return;}
+  setSyncStatus('loading','Saving...');
+  try {
+    if(editClientId) {
+      await sbUpdate('wf_clients', editClientId, {name,phone,start_date:start,sessions,fee});
+      toast('Client updated');
+    } else {
+      await sbInsert('wf_clients', {name,phone,start_date:start,sessions,fee});
+      toast('Client added — '+name);
+    }
+    await loadAll();
+    closeModal('modal-client');
+  } catch(e) { setSyncStatus('err','Error'); toast('Save failed: '+e.message); }
+}
+
+async function deleteClient(id) {
+  if(!confirm('Delete this client and all their records?')) return;
+  setSyncStatus('loading','Deleting...');
+  try {
+    await sbDelete('wf_attendance_by_client', id); // handled by cascade
+    await sbDelete('wf_clients', id);
+    toast('Client deleted');
+    await loadAll();
+  } catch(e) { toast('Delete failed — try again'); }
+}
+
+function editClient(id) {
+  editClientId=id; const c=clientById(id);
+  document.getElementById('modal-client-title').textContent='Edit Client';
+  document.getElementById('c-name').value=c.name;
+  document.getElementById('c-phone').value=c.phone||'';
+  document.getElementById('c-start').value=c.start_date||today();
+  document.getElementById('c-sessions').value=c.sessions;
+  document.getElementById('c-fee').value=c.fee;
+  document.getElementById('modal-client').classList.add('open');
+}
+
+function viewClient(id) {
+  const c=clientById(id);
+  const sess=clientSessions(id);
+  const balance=balanceDue(id);
+  const progress=Math.min(100,Math.round((sess.length/c.sessions)*100));
+  const sessLog=sess.map((a,i)=>`<tr><td>${i+1}</td><td>${fmtDate(a.date)}</td>
+    <td><span class="badge badge-${a.status==='present'?'present':a.status==='absent'?'absent':'late'}">${a.status==='late_cancel'?'Late Cancel':a.status.charAt(0).toUpperCase()+a.status.slice(1)}</span></td>
+    <td>${a.status==='present'?fmtMoney(c.fee):'—'}</td></tr>`).join('');
+  const payLog=clientPayments(id).map(p=>`<tr><td>${fmtDate(p.date)}</td><td>${fmtMoney(p.amount)}</td><td>${p.mode}</td><td>${p.reference||'—'}</td></tr>`).join('');
+  document.getElementById('view-name').textContent=c.name;
+  document.getElementById('view-content').innerHTML=`
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+      <div class="stat-box"><div class="stat-label">Package</div><div class="stat-value">${sess.length}/${c.sessions}</div></div>
+      <div class="stat-box"><div class="stat-label">Fee/Session</div><div class="stat-value red">${fmtMoney(c.fee)}</div></div>
+      <div class="stat-box"><div class="stat-label">Balance Due</div><div class="stat-value ${balance>0?'red':'green'}">${fmtMoney(balance)}</div></div>
+    </div>
+    <div style="margin-bottom:20px">
+      <div class="client-progress"><div class="client-progress-bar" style="width:${progress}%"></div></div>
+      <div class="client-progress-label"><span>${sessionsAttended(id)} attended</span><span>${c.sessions-sess.length} left</span></div>
+    </div>
+    <div style="font-size:12px;color:var(--grey);margin-bottom:16px">&#128222; ${c.phone||'No phone'} &nbsp;&#183;&nbsp; Started: ${fmtDate(c.start_date)} &nbsp;&#183;&nbsp; Earned: ${fmtMoney(amountEarned(id))} &nbsp;&#183;&nbsp; Paid: ${fmtMoney(totalPaid(id))}</div>
+    ${sess.length?`<div class="card-title" style="margin-bottom:12px">Attendance</div>
+    <div class="table-wrap"><table><thead><tr><th>#</th><th>Date</th><th>Status</th><th>Fee</th></tr></thead><tbody>${sessLog}</tbody></table></div>`
+    :'<div class="text-grey text-sm">No sessions recorded yet.</div>'}
+    ${payLog?`<div class="divider"></div><div class="card-title" style="margin-bottom:12px">Payments</div>
+    <div class="table-wrap"><table><thead><tr><th>Date</th><th>Amount</th><th>Mode</th><th>Ref</th></tr></thead><tbody>${payLog}</tbody></table></div>`:''}
+    <div class="divider"></div>
+    <div class="flex gap-8" style="justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-gold btn-sm" onclick="closeModal('modal-view');openInvoiceFor('${id}')">&#129534; Invoice</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-view');editClient('${id}')">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="closeModal('modal-view');deleteClient('${id}')">Delete</button>
+    </div>`;
+  document.getElementById('modal-view').classList.add('open');
+}
+
+function renderClients() {
+  const el=document.getElementById('client-list');
+  if(clients.length===0){el.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">&#128100;</div><div class="empty-text">No clients yet.</div></div>';return;}
+  el.innerHTML=clients.map(c=>{
+    const sess=clientSessions(c.id);const progress=Math.min(100,Math.round((sess.length/c.sessions)*100));const balance=balanceDue(c.id);
+    return`<div class="client-card" onclick="viewClient('${c.id}')">
+      <div class="client-name">${c.name}</div>
+      <div class="client-meta">${c.phone||'No phone'} &nbsp;&#183;&nbsp; ${fmtMoney(c.fee)}/session</div>
+      <div class="client-progress"><div class="client-progress-bar" style="width:${progress}%"></div></div>
+      <div class="client-progress-label"><span>${sess.length}/${c.sessions} sessions</span><span class="${balance>0?'text-red':'text-green'}">${balance>0?'Bal: '+fmtMoney(balance):'Paid up'}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Attendance ───────────────────────────────────────────────────
+async function markAttendance() {
+  const date=document.getElementById('att-date').value;
+  const clientId=document.getElementById('att-client').value;
+  const status=document.getElementById('att-status').value;
+  if(!date||!clientId){toast('Select a date and client');return;}
+  const c=clientById(clientId);
+  if(attendance.filter(a=>a.client_id===clientId&&a.date===date).length>0){toast('Already marked for this date');return;}
+  if(clientSessions(clientId).length>=c.sessions){toast('Package sessions exhausted');return;}
+  setSyncStatus('loading','Saving...');
+  try {
+    await sbInsert('wf_attendance',{client_id:clientId,date,status});
+    toast(`Marked ${status==='late_cancel'?'Late Cancel':status} for ${c.name}`);
+    await loadAll(); renderAttendanceLog();
+  } catch(e) { setSyncStatus('err','Error'); toast('Failed: '+e.message); }
+}
+
+async function deleteAttendance(id) {
+  if(!confirm('Remove this session record?')) return;
+  try { await sbDelete('wf_attendance',id); await loadAll(); renderAttendanceLog(); toast('Session removed'); }
+  catch(e) { toast('Delete failed'); }
+}
+
+function renderAttendanceLog() {
+  const fc=document.getElementById('filter-client')?.value||'';
+  const fm=document.getElementById('filter-month')?.value||'';
+  let rows=[...attendance].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(fc) rows=rows.filter(a=>a.client_id===fc);
+  if(fm) rows=rows.filter(a=>a.date.startsWith(fm));
+  const tbody=document.getElementById('att-log-body');
+  const empty=document.getElementById('att-empty');
+  if(rows.length===0){tbody.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  tbody.innerHTML=rows.map((a,i)=>{
+    const c=clientById(a.client_id);
+    const sn=c?clientSessions(a.client_id).findIndex(s=>s.id===a.id)+1:'—';
+    const bc=a.status==='present'?'present':a.status==='absent'?'absent':'late';
+    const label=a.status==='late_cancel'?'Late Cancel':a.status.charAt(0).toUpperCase()+a.status.slice(1);
+    return`<tr><td class="text-grey">${i+1}</td><td>${fmtDate(a.date)}</td><td>${c?c.name:'—'}</td>
+    <td>${sn}/${c?c.sessions:'?'}</td><td><span class="badge badge-${bc}">${label}</span></td>
+    <td>${a.status==='present'&&c?fmtMoney(c.fee):'—'}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteAttendance('${a.id}')">&#10005;</button></td></tr>`;
+  }).join('');
+}
+
+// ── Payments ─────────────────────────────────────────────────────
+async function recordPayment() {
+  const clientId=document.getElementById('pay-client').value;
+  const amount=parseFloat(document.getElementById('pay-amount').value);
+  const date=document.getElementById('pay-date').value;
+  const mode=document.getElementById('pay-mode').value;
+  const reference=document.getElementById('pay-ref').value.trim();
+  if(!clientId||!amount||!date){toast('Fill in all required fields');return;}
+  const c=clientById(clientId);
+  setSyncStatus('loading','Saving...');
+  try {
+    await sbInsert('wf_payments',{client_id:clientId,amount,date,mode,reference});
+    document.getElementById('pay-amount').value=''; document.getElementById('pay-ref').value='';
+    toast(`Payment of ${fmtMoney(amount)} recorded for ${c.name}`);
+    await loadAll(); renderPaymentLog();
+  } catch(e) { setSyncStatus('err','Error'); toast('Failed: '+e.message); }
+}
+
+async function deletePayment(id) {
+  if(!confirm('Remove this payment record?')) return;
+  try { await sbDelete('wf_payments',id); await loadAll(); renderPaymentLog(); toast('Payment removed'); }
+  catch(e) { toast('Delete failed'); }
+}
+
+function renderPaymentLog() {
+  const rows=[...payments].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const tbody=document.getElementById('pay-log-body'); const empty=document.getElementById('pay-empty');
+  if(rows.length===0){tbody.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  tbody.innerHTML=rows.map(p=>{const c=clientById(p.client_id);
+    return`<tr><td>${fmtDate(p.date)}</td><td>${c?c.name:'—'}</td><td class="text-green font-bold">${fmtMoney(p.amount)}</td>
+    <td><span class="payment-pill">${p.mode}</span></td><td class="text-grey">${p.reference||'—'}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deletePayment('${p.id}')">&#10005;</button></td></tr>`;
+  }).join('');
+}
+
+// ── Monthly Report ───────────────────────────────────────────────
+function generateReport() {
+  const ym=document.getElementById('report-month').value; if(!ym) return;
+  const monthAtt=attendance.filter(a=>a.date.startsWith(ym));
+  const monthPay=payments.filter(p=>p.date.startsWith(ym));
+  const clientReport=clients.map(c=>{
+    const att=monthAtt.filter(a=>a.client_id===c.id);
+    const present=att.filter(a=>a.status==='present').length;
+    const absent=att.filter(a=>a.status==='absent').length;
+    const lateCancel=att.filter(a=>a.status==='late_cancel').length;
+    const earned=present*c.fee;
+    const paid=monthPay.filter(p=>p.client_id===c.id).reduce((s,p)=>s+p.amount,0);
+    return{c,present,absent,lateCancel,earned,paid,balance:earned-paid};
+  }).filter(r=>r.present+r.absent+r.lateCancel+r.paid>0);
+  const totalEarned=clientReport.reduce((s,r)=>s+r.earned,0);
+  const totalPaidMonth=clientReport.reduce((s,r)=>s+r.paid,0);
+  const totalSessions=clientReport.reduce((s,r)=>s+r.present,0);
+  const el=document.getElementById('report-output');
+  if(clientReport.length===0){el.innerHTML='<div class="empty"><div class="empty-icon">&#128202;</div><div class="empty-text">No data for this month</div></div>';return;}
+  el.innerHTML=`
+    <div class="stats-grid" style="margin-bottom:24px">
+      <div class="stat-box"><div class="stat-label">Sessions Done</div><div class="stat-value">${totalSessions}</div></div>
+      <div class="stat-box"><div class="stat-label">Total Earned</div><div class="stat-value red">${fmtMoney(totalEarned)}</div></div>
+      <div class="stat-box"><div class="stat-label">Total Received</div><div class="stat-value green">${fmtMoney(totalPaidMonth)}</div></div>
+      <div class="stat-box"><div class="stat-label">Outstanding</div><div class="stat-value gold">${fmtMoney(Math.max(0,totalEarned-totalPaidMonth))}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Client Breakdown — ${monthLabel(ym)}</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Client</th><th>Present</th><th>Absent</th><th>Late Cancel</th><th>Earned</th><th>Paid</th><th>Balance</th><th></th></tr></thead>
+        <tbody>${clientReport.map(r=>`<tr>
+          <td>${r.c.name}</td><td class="text-green">${r.present}</td><td class="text-red">${r.absent}</td>
+          <td style="color:var(--amber)">${r.lateCancel}</td><td>${fmtMoney(r.earned)}</td>
+          <td class="text-green">${fmtMoney(r.paid)}</td>
+          <td class="${r.balance>0?'text-red font-bold':'text-green'}">${fmtMoney(r.balance)}</td>
+          <td><button class="btn btn-gold btn-sm" onclick="openInvoiceFor('${r.c.id}','${ym}')">&#129534;</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
+
+// ── Settings ─────────────────────────────────────────────────────
+function loadSettings() {
+  document.getElementById('s-name').value    =settings.name    ||'Wolvies Fitness';
+  document.getElementById('s-phone').value   =settings.phone   ||'';
+  document.getElementById('s-email').value   =settings.email   ||'';
+  document.getElementById('s-location').value=settings.location||'Kolenchery, Kerala';
+  document.getElementById('s-upi').value     =settings.upi     ||'';
+  document.getElementById('s-social').value  =settings.social  ||'@wolviesfitness';
+}
+function saveSettings() {
+  settings={
+    name:    document.getElementById('s-name').value.trim(),
+    phone:   document.getElementById('s-phone').value.trim(),
+    email:   document.getElementById('s-email').value.trim(),
+    location:document.getElementById('s-location').value.trim(),
+    upi:     document.getElementById('s-upi').value.trim(),
+    social:  document.getElementById('s-social').value.trim(),
+  };
+  localStorage.setItem('wf_settings', JSON.stringify(settings));
+  localStorage.setItem('wf_inv_counter', invCounter);
+  toast('Settings saved');
+}
+
+// ── Invoice ───────────────────────────────────────────────────────
+function openInvoiceFor(clientId, ym) {
+  populateClientSelects(); populateMonthFilter();
+  if(clientId) document.getElementById('inv-client').value=clientId;
+  if(ym) document.getElementById('inv-month').value=ym;
+  document.getElementById('modal-invoice').classList.add('open');
+}
+
+function generateInvoice() {
+  const clientId=document.getElementById('inv-client').value;
+  const ym=document.getElementById('inv-month').value;
+  if(!clientId||!ym){toast('Select a client and month');return;}
+  const c=clientById(clientId);
+  const invNum='WF-'+new Date().getFullYear()+'-'+String(invCounter).padStart(3,'0');
+  invCounter++; localStorage.setItem('wf_inv_counter',invCounter);
+  const s=settings;
+  const monthAtt=attendance.filter(a=>a.client_id===clientId&&a.date.startsWith(ym));
+  const monthPay=payments.filter(p=>p.client_id===clientId&&p.date.startsWith(ym));
+  const present=monthAtt.filter(a=>a.status==='present');
+  const absent=monthAtt.filter(a=>a.status==='absent');
+  const lateCancel=monthAtt.filter(a=>a.status==='late_cancel');
+  const earned=present.length*c.fee;
+  const paidAmt=monthPay.reduce((s,p)=>s+p.amount,0);
+  const balance=earned-paidAmt;
+  const overallBalance=amountEarned(clientId)-totalPaid(clientId);
+  const sessionRows=present.map((a,i)=>`<tr>
+    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151">${i+1}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151">${fmtDate(a.date)}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151">Personal Coaching Session</td>
+    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151;text-align:right;font-weight:600">${fmtMoney(c.fee)}</td></tr>`).join('');
+  const paymentRows=monthPay.length>0?monthPay.map(p=>`<tr>
+    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151">${fmtDate(p.date)}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151">${p.mode}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151">${p.reference||'—'}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#22c55e;font-weight:700;text-align:right">${fmtMoney(p.amount)}</td></tr>`).join('')
+    :`<tr><td colspan="4" style="padding:16px 12px;color:#9ca3af;text-align:center">No payments recorded this month</td></tr>`;
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${invNum} — ${c.name}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Barlow',sans-serif;background:#f3f4f6}
+  .page{max-width:780px;margin:0 auto;background:#fff;min-height:100vh}
+  @media print{body{background:#fff}.page{max-width:100%}@page{margin:15mm}}</style>
+  </head><body><div class="page">
+    <div style="background:#CC1111;padding:36px 44px;display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+          <img src="data:image/png;base64,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" style="height:72px;width:72px;object-fit:contain;" alt="Logo">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#fff;letter-spacing:5px;line-height:1">WOLVIES FITNESS</div>
+        </div>
+        <div style="color:rgba(255,255,255,0.7);font-size:10px;letter-spacing:3px;text-transform:uppercase">Train. Nourish. Transform.</div>
+        <div style="margin-top:16px;color:rgba(255,255,255,0.9);font-size:13px;line-height:2">
+          <strong>${s.name||'Coach'}</strong><br>
+          ${s.phone?'&#128222; '+s.phone+'<br>':''}
+          ${s.email?'&#9993; '+s.email+'<br>':''}
+          &#128205; ${s.location||'Kolenchery, Kerala'}
+          ${s.social?'<br>'+s.social:''}
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:rgba(0,0,0,0.15);letter-spacing:3px;line-height:1">INVOICE</div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:16px 22px;margin-top:6px">
+          <div style="font-size:10px;color:rgba(255,255,255,0.6);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px">Invoice No.</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#fff;letter-spacing:2px">${invNum}</div>
+          <div style="height:1px;background:rgba(255,255,255,0.2);margin:10px 0"></div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.6);letter-spacing:2px;text-transform:uppercase">Issue Date</div>
+          <div style="font-size:13px;color:#fff;font-weight:600;margin-top:2px">${fmtDate(today())}</div>
+          <div style="margin-top:8px;font-size:10px;color:rgba(255,255,255,0.6);letter-spacing:2px;text-transform:uppercase">Billing Period</div>
+          <div style="font-size:13px;color:#fff;font-weight:600;margin-top:2px">${monthLabel(ym)}</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:28px 44px;background:#f9fafb;border-bottom:2px solid #e5e7eb">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;margin-bottom:10px">Billed To</div>
+        <div style="font-size:22px;font-weight:700;color:#111;margin-bottom:4px">${c.name}</div>
+        <div style="color:#6b7280;font-size:13px;line-height:1.8">
+          ${c.phone?'&#128222; '+c.phone+'<br>':''}
+          Package: <strong>${c.sessions} sessions</strong> &nbsp;&#183;&nbsp; Rate: <strong>${fmtMoney(c.fee)}/session</strong><br>
+          Start Date: <strong>${fmtDate(c.start_date)}</strong>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;margin-bottom:8px">Amount Due</div>
+        <div style="font-size:40px;font-weight:700;color:${balance>0?'#CC1111':'#22c55e'}">${fmtMoney(balance)}</div>
+        <div style="font-size:12px;margin-top:4px;color:${balance>0?'#CC1111':'#22c55e'};font-weight:600">${balance<=0?'&#9989; Fully Paid':'&#9203; Payment Pending'}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);background:#e5e7eb;gap:1px;border-bottom:2px solid #e5e7eb">
+      ${[['Present',present.length,'#22c55e'],['Absent',absent.length,'#ef4444'],['Late Cancel',lateCancel.length,'#f59e0b'],['Total Billed',fmtMoney(earned),'#CC1111']]
+        .map(([l,v,col])=>`<div style="background:#fff;padding:20px;text-align:center">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:6px">${l}</div>
+          <div style="font-size:28px;font-weight:700;color:${col}">${v}</div></div>`).join('')}
+    </div>
+    <div style="padding:32px 44px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;margin-bottom:14px">Session Breakdown — ${monthLabel(ym)}</div>
+      ${present.length>0?`<table style="width:100%;border-collapse:collapse;margin-bottom:28px;font-size:13px">
+        <thead><tr style="background:#f3f4f6">
+          ${['#','Date','Description','Amount'].map((h,i)=>`<th style="padding:10px 12px;text-align:${i===3?'right':'left'};font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#6b7280;border-bottom:2px solid #e5e7eb;font-weight:700">${h}</th>`).join('')}
+        </tr></thead><tbody>${sessionRows}</tbody></table>`
+        :'<p style="color:#9ca3af;font-size:13px;padding:16px 0;margin-bottom:28px">No sessions attended this month.</p>'}
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:22px 24px;margin-bottom:28px">
+        ${[['Sessions Attended ('+present.length+' x '+fmtMoney(c.fee)+')',fmtMoney(earned),'#111'],
+           ['Amount Paid This Month',fmtMoney(paidAmt),'#22c55e']]
+          .map(([l,v,col])=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #e5e7eb">
+          <span style="font-size:13px;color:#374151">${l}</span>
+          <span style="font-size:14px;font-weight:700;color:${col}">${v}</span></div>`).join('')}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 4px">
+          <span style="font-size:16px;font-weight:700;color:#111">Balance Due This Month</span>
+          <span style="font-size:24px;font-weight:700;color:${balance>0?'#CC1111':'#22c55e'}">${fmtMoney(balance)}</span>
+        </div>
+        ${overallBalance>0&&overallBalance!==balance?`<div style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px dashed #e5e7eb;margin-top:4px">
+          <span style="font-size:12px;color:#9ca3af">Overall Outstanding (all time)</span>
+          <span style="font-size:13px;font-weight:700;color:#ef4444">${fmtMoney(overallBalance)}</span></div>`:''}
+      </div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;margin-bottom:14px">Payments Received — ${monthLabel(ym)}</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:28px;font-size:13px">
+        <thead><tr style="background:#f3f4f6">
+          ${['Date','Mode','Reference','Amount'].map((h,i)=>`<th style="padding:10px 12px;text-align:${i===3?'right':'left'};font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#6b7280;border-bottom:2px solid #e5e7eb;font-weight:700">${h}</th>`).join('')}
+        </tr></thead><tbody>${paymentRows}</tbody>
+      </table>
+      ${s.upi?`<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:18px 24px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9a3412;margin-bottom:6px">Pay Via UPI</div>
+        <div style="font-size:18px;font-weight:700;color:#111">${s.upi}</div>
+        <div style="font-size:12px;color:#9a3412;margin-top:4px">Send payment and share screenshot</div></div>
+        <div style="font-size:40px">&#128241;</div></div>`:''}
+      <div style="border-top:3px solid #CC1111;padding-top:22px;display:flex;justify-content:space-between;align-items:flex-end">
+        <div style="display:flex;align-items:center;gap:10px">
+          <img src="data:image/png;base64,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" style="height:48px;width:48px;object-fit:contain;" alt="Logo">
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#CC1111;letter-spacing:3px">WOLVIES FITNESS</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:4px">Thank you for trusting us with your fitness journey. &#128170;</div>
+          </div>
+        </div>
+        <div style="text-align:right;font-size:11px;color:#9ca3af;line-height:1.8">Invoice No: ${invNum}<br>Generated: ${fmtDate(today())}<br>Computer-generated document</div>
+      </div>
+    </div>
+  </div></body></html>`;
+  document.getElementById('invoice-frame').innerHTML=html;
+  document.getElementById('invoice-overlay').style.display='flex';
+  closeModal('modal-invoice');
+  toast(`Invoice ${invNum} generated for ${c.name}`);
+}
+
+function closeInvoice() {
+  document.getElementById('invoice-overlay').style.display='none';
+  document.getElementById('invoice-frame').innerHTML='';
+}
+function printInvoice() {
+  const content=document.getElementById('invoice-frame').innerHTML;
+  const pri=document.getElementById('print-iframe').contentWindow;
+  pri.document.open(); pri.document.write(content); pri.document.close();
+  pri.focus(); setTimeout(()=>pri.print(),500);
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+
+document.getElementById('att-date').value=today();
+document.getElementById('pay-date').value=today();
+loadAll();
+</script>
+</body>
+</html>
